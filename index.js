@@ -1,46 +1,46 @@
-import express from "express";
+import express, { response } from "express";
 import morgan from "morgan";
 import cors from "cors";
+import dotenv from "dotenv";
 
+import Person from "./models/person.js";
+
+dotenv.config();
 const app = express();
 app.use(cors());
+app.use(express.static("build"));
 app.use(express.json());
 app.use(morgan("tiny"));
-app.use(express.static("build"));
-let persons = [
-	{
-		id: 1,
-		name: "Arto Hellas",
-		number: "040-123456",
-	},
-	{
-		id: 2,
-		name: "Ada Lovelace",
-		number: "39-44-5323523",
-	},
-	{
-		id: 3,
-		name: "Dan Abramov",
-		number: "12-43-234345",
-	},
-	{
-		id: 4,
-		name: "Mary Poppendieck",
-		number: "39-23-6423122",
-	},
-];
 
-app.get("/api/persons", (request, response) => {
-	response.json(persons);
-});
-app.get("/api/persons/:id", (req, res) => {
-	const id = Number(req.params.id);
-	const person = persons.find((el) => el.id === id);
-	if (person) {
-		res.json(person);
-	} else {
-		res.status(404).end("nothing has found");
+const errorHandler = (error, request, response, next) => {
+	console.log("error.name =", error.name);
+	if (error.name === "CastError") {
+		return response.status(400).send({ error: "malformatted id" });
+	} else if (error.name === "ValidationError") {
+		return response
+			.status(400)
+			.send({ error: `${error.message}-------------` });
 	}
+
+	next(error);
+};
+
+app.get("/api/persons", async (request, response) => {
+	const person = await Person.find({});
+	response.json(person);
+});
+app.get("/api/persons/:id", (req, res, next) => {
+	Person.findById(req.params.id)
+		.then((person) => {
+			if (person) {
+				res.json(person);
+			} else {
+				res.status(404).end();
+			}
+		})
+		.catch((error) => {
+			return next(error);
+		});
 });
 app.get("/api/info", (req, res) => {
 	const length = persons.length;
@@ -48,36 +48,41 @@ app.get("/api/info", (req, res) => {
 	${Date()}`);
 });
 app.delete("/api/persons/:id", (req, res) => {
-	const id = Number(req.params.id);
-	persons = persons.filter((el) => el.id !== id);
-	res.status(204).json(persons);
+	Person.findByIdAndDelete(req.params.id).then((persons) => {
+		console.log("deleted response - ", persons);
+		res.status(204).json(persons);
+	});
 });
-app.post("/api/persons", (req, res) => {
-	const createId = (max, min) => {
-		max = Math.floor(max);
-		min = Math.ceil(min);
-		const rand = Math.floor(Math.random() * (max - min) + min);
-		return rand;
-	};
-	const id = createId(100000, 0);
-	if (!req.body.name) {
-		return res.status(400).send("name is missing");
+app.post("/api/persons", (req, res, next) => {
+	if (!req.body) {
+		return response.status(400).json({ error: "content missing" });
 	}
-	if (!req.body.number) {
-		return res.status(400).send("number is missing");
-	}
-	const uniqueName = persons.every((person) => person.name !== req.body.name);
-	if (!uniqueName) {
-		return res.status(400).send(`name ${req.body.name} already exists`);
-	}
-	const newPerson = {
-		id: id,
+	const newPerson = new Person({
+		name: req.body.name,
+		number: req.body.number,
+	});
+	newPerson
+		.save()
+		.then((savedNote) => res.json(savedNote))
+		.catch((err) => {
+			console.log("error ====", err.name);
+			return next(err);
+		});
+});
+app.put("/api/persons/:id", (req, res, next) => {
+	const body = req.body;
+	const updatedPerson = {
 		name: req.body.name,
 		number: req.body.number,
 	};
-	persons = persons.concat(newPerson);
-	res.json(persons);
+	Person.findByIdAndUpdate(req.params.id, updatedPerson, { new: true })
+		.then((updatedPerson) => {
+			console.log("updatedPerson ", updatedPerson);
+			res.json(updatedPerson);
+		})
+		.catch((error) => next(error));
 });
+app.use(errorHandler);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`server is running on the port ${PORT}`));
