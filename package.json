@@ -6,7 +6,8 @@
 	"scripts": {
 		"start": "node index.js",
 		"dev": "nodemon index.js",
-		"clear nodemon": "pkill -f nodemon"
+		"clear nodemon": "pkill -f nodemon",
+		"lint": "eslint ."
 	},
 	"author": "",
 	"license": "ISC",
@@ -21,6 +22,7 @@
 	},
 	"type": "module",
 	"devDependencies": {
+		"eslint": "^7.32.0",
 		"nodemon": "^2.0.12"
 	}
 }
