@@ -1,0 +1,29 @@
+{
+	"name": "part_3",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"start": "node index.js",
+		"dev": "nodemon index.js",
+		"clear_nodemon": "pkill -f nodemon",
+		"lint": "eslint ."
+	},
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"cors": "^2.8.5",
+		"dotenv": "^10.0.0",
+		"express": "^4.17.1",
+		"mongodb": "^4.0.1",
+		"mongoose": "^5.13.4",
+		"mongoose-unique-validator": "^2.0.3",
+		"morgan": "^1.10.0"
+	},
+	"type": "module",
+	"devDependencies": {
+		"eslint": "^7.32.0",
+		"eslint-plugin-react": "^7.26.1",
+		"nodemon": "^2.0.12"
+	}
+}
